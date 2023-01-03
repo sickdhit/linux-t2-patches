@@ -2281,3 +2281,100 @@ index b49dcdf70fccd3..81d908b75de14c 100644
  	return 0;
  }
  
+
+From 3ea0fedefa1fe836caf71726a0060c1ec6d19fff Mon Sep 17 00:00:00 2001
+From: Hector Martin <marcan@marcan.st>
+Date: Tue, 18 Oct 2022 21:55:52 +0900
+Subject: [PATCH 23/26] wifi: brcmfmac: Add newer msgbuf packet types up to
+ 0x2e
+
+There are many newer msgbuf packet types that are not yet listed in the
+defines in msgbuf.c. Add them for future use.
+
+Signed-off-by: Hector Martin <marcan@marcan.st>
+---
+ .../broadcom/brcm80211/brcmfmac/msgbuf.c      | 26 +++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
+index cec53f934940a6..6b462c8e0b54be 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
+@@ -47,6 +47,32 @@
+ #define MSGBUF_TYPE_RX_CMPLT			0x12
+ #define MSGBUF_TYPE_LPBK_DMAXFER		0x13
+ #define MSGBUF_TYPE_LPBK_DMAXFER_CMPLT		0x14
++#define MSGBUF_TYPE_FLOW_RING_RESUME		0x15
++#define MSGBUF_TYPE_FLOW_RING_RESUME_CMPLT	0x16
++#define MSGBUF_TYPE_FLOW_RING_SUSPEND		0x17
++#define MSGBUF_TYPE_FLOW_RING_SUSPEND_CMPLT	0x18
++#define MSGBUF_TYPE_INFO_BUF_POST		0x19
++#define MSGBUF_TYPE_INFO_BUF_CMPLT		0x1A
++#define MSGBUF_TYPE_H2D_RING_CREATE		0x1B
++#define MSGBUF_TYPE_D2H_RING_CREATE		0x1C
++#define MSGBUF_TYPE_H2D_RING_CREATE_CMPLT	0x1D
++#define MSGBUF_TYPE_D2H_RING_CREATE_CMPLT	0x1E
++#define MSGBUF_TYPE_H2D_RING_CONFIG		0x1F
++#define MSGBUF_TYPE_D2H_RING_CONFIG		0x20
++#define MSGBUF_TYPE_H2D_RING_CONFIG_CMPLT	0x21
++#define MSGBUF_TYPE_D2H_RING_CONFIG_CMPLT	0x22
++#define MSGBUF_TYPE_H2D_MAILBOX_DATA		0x23
++#define MSGBUF_TYPE_D2H_MAILBOX_DATA		0x24
++#define MSGBUF_TYPE_TIMSTAMP_BUFPOST		0x25
++#define MSGBUF_TYPE_HOSTTIMSTAMP		0x26
++#define MSGBUF_TYPE_HOSTTIMSTAMP_CMPLT		0x27
++#define MSGBUF_TYPE_FIRMWARE_TIMESTAMP		0x28
++#define MSGBUF_TYPE_SNAPSHOT_UPLOAD		0x29
++#define MSGBUF_TYPE_SNAPSHOT_CMPLT		0x2A
++#define MSGBUF_TYPE_H2D_RING_DELETE		0x2B
++#define MSGBUF_TYPE_D2H_RING_DELETE		0x2C
++#define MSGBUF_TYPE_H2D_RING_DELETE_CMPLT	0x2D
++#define MSGBUF_TYPE_D2H_RING_DELETE_CMPLT	0x2E
+ 
+ #define NR_TX_PKTIDS				2048
+ #define NR_RX_PKTIDS				1024
+
+From caddbfef02f63b2b7b119ff58043dde5f9dad61f Mon Sep 17 00:00:00 2001
+From: Hector Martin <marcan@marcan.st>
+Date: Tue, 18 Oct 2022 21:56:53 +0900
+Subject: [PATCH 24/26] wifi: brcmfmac: Add a new bus op for D2H mailbox
+ message handling
+
+Newer firmware versions use the common ring for sending mailbox messages
+between the dongle and host, instead of the hardware mailboxes. This
+needs the protocol driver to call back into the bus driver, so add a
+callback for this to bus.h.
+
+Signed-off-by: Hector Martin <marcan@marcan.st>
+---
+ drivers/net/wireless/broadcom/brcm80211/brcmfmac/bus.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/bus.h b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/bus.h
+index 4802692c91f765..c350af827003b6 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/bus.h
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/bus.h
+@@ -89,6 +89,7 @@ struct brcmf_bus_ops {
+ 			enum brcmf_blob_type type);
+ 	void (*debugfs_create)(struct device *dev);
+ 	int (*reset)(struct device *dev);
++	void (*d2h_mb_rx)(struct device *dev, u32 data);
+ };
+ 
+ 
+@@ -252,6 +253,15 @@ int brcmf_bus_reset(struct brcmf_bus *bus)
+ 	return bus->ops->reset(bus->dev);
+ }
+ 
++static inline
++void brcmf_bus_d2h_mb_rx(struct brcmf_bus *bus, u32 data)
++{
++	if (!bus->ops->d2h_mb_rx)
++		return;
++
++	return bus->ops->d2h_mb_rx(bus->dev, data);
++}
++
+ /*
+  * interface functions from common layer
+  */
