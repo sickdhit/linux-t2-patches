@@ -2196,6 +2196,52 @@ index 2d0071df2b2bfc..b49dcdf70fccd3 100644
  	return 0;
  }
 
+From 8e76ec01738c0d63afb72ff681547b1efb530b69 Mon Sep 17 00:00:00 2001
+From: Hector Martin <marcan@marcan.st>
+Date: Tue, 18 Oct 2022 22:10:08 +0900
+Subject: [PATCH 22/26] wifi: brcmfmac: Support v6+ flags and set host_cap
+ properly
+
+Interface versions 6 and above support having the host tell the dongle
+about what it supports via a host_cap field (it seems that if it is set
+to zero, some kind of unknown defaults are used). Explicitly support and
+set this.
+
+This also disables OOB deep sleep support; it doesn't look like deep
+sleep is properly supported yet at all (it needs more logic than merely
+acking requests, which is all pcie.c does right now).
+
+Signed-off-by: Hector Martin <marcan@marcan.st>
+---
+ .../broadcom/brcm80211/brcmfmac/pcie.c        | 35 ++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+index b49dcdf70fccd3..81d908b75de14c 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+@@ -347,6 +347,8 @@ struct brcmf_pcie_console {
+ struct brcmf_pcie_shared_info {
+ 	u32 tcm_base_address;
+ 	u32 flags;
++	u32 flags2;
++	u32 flags3;
+ 	struct brcmf_pcie_ringbuf *commonrings[BRCMF_NROF_COMMON_MSGRINGS];
+ 	struct brcmf_pcie_ringbuf *flowrings;
+ 	u16 max_rxbufpost;
+@@ -1661,12 +1663,16 @@ brcmf_pcie_init_share_ram_info(struct brcmf_pciedev_info *devinfo,
+ {
+ 	struct brcmf_bus *bus = dev_get_drvdata(&devinfo->pdev->dev);
+ 	struct brcmf_pcie_shared_info *shared;
++	u32 host_cap;
++	u32 host_cap2;
+ 	u32 addr;
+ 
+ 	shared = &devinfo->shared;
+ 	shared->tcm_base_address = sharedram_addr;
+ 
+-	shared->flags = brcmf_pcie_read_tcm32(devinfo, sharedram_addr);
++	shared->flags = brcmf_pcie_read_tcm32(devinfo, sharedram_addr +
 +	                                      BRCMF_SHARED_FLAGS_OFFSET);
 +
  	shared->version = (u8)(shared->flags & BRCMF_PCIE_SHARED_VERSION_MASK);
