@@ -1916,3 +1916,206 @@ index a83699de01ec3c..d295b9f3a4fbe5 100644
  	root = of_find_node_by_path("/");
  	if (root && !settings->board_type) {
 
+From 55b5f2833aa40024bf6cde448fb8403a8be0e686 Mon Sep 17 00:00:00 2001
+From: Hector Martin <marcan@marcan.st>
+Date: Fri, 1 Jul 2022 23:51:23 +0900
+Subject: [PATCH 18/26] brcmfmac: pcie: Add BCM4378B3 support
+
+BCM4378B3 is a new silicon revision of BCM4378 present on the Apple M2
+13" MacBook Pro "kyushu". Its PCI revision number is 5.
+
+Signed-off-by: Hector Martin <marcan@marcan.st>
+---
+ drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+index 286362c2c6cb23..7d9e593a822ada 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+@@ -63,6 +63,7 @@ BRCMF_FW_DEF(4366C, "brcmfmac4366c-pcie");
+ BRCMF_FW_DEF(4371, "brcmfmac4371-pcie");
+ BRCMF_FW_CLM_DEF(4377B3, "brcmfmac4377b3-pcie");
+ BRCMF_FW_CLM_DEF(4378B1, "brcmfmac4378b1-pcie");
++BRCMF_FW_CLM_DEF(4378B3, "brcmfmac4378b3-pcie");
+ BRCMF_FW_CLM_DEF(4387C2, "brcmfmac4387c2-pcie");
+ BRCMF_FW_DEF(4355, "brcmfmac89459-pcie");
+ 
+@@ -97,7 +98,8 @@ static const struct brcmf_firmware_mapping brcmf_pcie_fwnames[] = {
+ 	BRCMF_FW_ENTRY(BRCM_CC_43666_CHIP_ID, 0xFFFFFFF0, 4366C),
+ 	BRCMF_FW_ENTRY(BRCM_CC_4371_CHIP_ID, 0xFFFFFFFF, 4371),
+ 	BRCMF_FW_ENTRY(BRCM_CC_4377_CHIP_ID, 0xFFFFFFFF, 4377B3), /* revision ID 4 */
+-	BRCMF_FW_ENTRY(BRCM_CC_4378_CHIP_ID, 0xFFFFFFFF, 4378B1), /* revision ID 3 */
++	BRCMF_FW_ENTRY(BRCM_CC_4378_CHIP_ID, 0x0000000F, 4378B1), /* revision ID 3 */
++	BRCMF_FW_ENTRY(BRCM_CC_4378_CHIP_ID, 0xFFFFFFE0, 4378B3), /* revision ID 5 */
+ 	BRCMF_FW_ENTRY(BRCM_CC_4387_CHIP_ID, 0xFFFFFFFF, 4387C2), /* revision ID 7 */
+ 	BRCMF_FW_ENTRY(CY_CC_89459_CHIP_ID, 0xFFFFFFFF, 4355),
+ };
+
+From 287713d2f27eb826f1dcae16368bcda262e4318d Mon Sep 17 00:00:00 2001
+From: Hector Martin <marcan@marcan.st>
+Date: Tue, 18 Oct 2022 21:59:24 +0900
+Subject: [PATCH 19/26] wifi: brcmfmac: Add missing shared area defines to
+ pcie.c
+
+There are many newer flags and extended shared area fields used by newer
+firmwares that are not yet defined. Add them for future usage.
+
+Signed-off-by: Hector Martin <marcan@marcan.st>
+---
+ .../broadcom/brcm80211/brcmfmac/pcie.c        | 58 +++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+index 7d9e593a822ada..ec58f0a83dbe42 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+@@ -209,11 +209,64 @@ static const struct brcmf_firmware_mapping brcmf_pcie_fwnames[] = {
+ #define BRCMF_PCIE_SHARED_VERSION_MASK		0x00FF
+ #define BRCMF_PCIE_SHARED_DMA_INDEX		0x10000
+ #define BRCMF_PCIE_SHARED_DMA_2B_IDX		0x100000
++#define BRCMF_PCIE_SHARED_USE_MAILBOX		0x2000000
++#define BRCMF_PCIE_SHARED_TIMESTAMP_DB0		0x8000000
+ #define BRCMF_PCIE_SHARED_HOSTRDY_DB1		0x10000000
++#define BRCMF_PCIE_SHARED_NO_OOB_DW		0x20000000
++#define BRCMF_PCIE_SHARED_INBAND_DS		0x40000000
++#define BRCMF_PCIE_SHARED_DAR			0x80000000
++
++#define BRCMF_PCIE_SHARED2_EXTENDED_TRAP_DATA	0x1
++#define BRCMF_PCIE_SHARED2_TXSTATUS_METADATA	0x2
++#define BRCMF_PCIE_SHARED2_BT_LOGGING		0x4
++#define BRCMF_PCIE_SHARED2_SNAPSHOT_UPLOAD	0x8
++#define BRCMF_PCIE_SHARED2_SUBMIT_COUNT_WAR	0x10
++#define BRCMF_PCIE_SHARED2_FAST_DELETE_RING	0x20
++#define BRCMF_PCIE_SHARED2_EVTBUF_MAX_MASK	0xC0
++#define BRCMF_PCIE_SHARED2_PKT_TX_STATUS	0x100
++#define BRCMF_PCIE_SHARED2_FW_SMALL_MEMDUMP	0x200
++#define BRCMF_PCIE_SHARED2_FW_HC_ON_TRAP	0x400
++#define BRCMF_PCIE_SHARED2_HSCB			0x800
++#define BRCMF_PCIE_SHARED2_EDL_RING		0x1000
++#define BRCMF_PCIE_SHARED2_DEBUG_BUF_DEST	0x2000
++#define BRCMF_PCIE_SHARED2_PCIE_ENUM_RESET_FLR	0x4000
++#define BRCMF_PCIE_SHARED2_PKT_TIMESTAMP	0x8000
++#define BRCMF_PCIE_SHARED2_HP2P			0x10000
++#define BRCMF_PCIE_SHARED2_HWA			0x20000
++#define BRCMF_PCIE_SHARED2_TRAP_ON_HOST_DB7	0x40000
++#define BRCMF_PCIE_SHARED2_DURATION_SCALE	0x100000
++#define BRCMF_PCIE_SHARED2_D2H_D11_TX_STATUS	0x40000000
++#define BRCMF_PCIE_SHARED2_H2D_D11_TX_STATUS	0x80000000
+ 
+ #define BRCMF_PCIE_FLAGS_HTOD_SPLIT		0x4000
+ #define BRCMF_PCIE_FLAGS_DTOH_SPLIT		0x8000
+ 
++#define BRCMF_HOSTCAP_PCIEAPI_VERSION_MASK	0x000000FF
++#define BRCMF_HOSTCAP_H2D_VALID_PHASE		0x00000100
++#define BRCMF_HOSTCAP_H2D_ENABLE_TRAP_ON_BADPHASE	0x00000200
++#define BRCMF_HOSTCAP_H2D_ENABLE_HOSTRDY	0x400
++#define BRCMF_HOSTCAP_DB0_TIMESTAMP		0x800
++#define BRCMF_HOSTCAP_DS_NO_OOB_DW		0x1000
++#define BRCMF_HOSTCAP_DS_INBAND_DW		0x2000
++#define BRCMF_HOSTCAP_H2D_IDMA			0x4000
++#define BRCMF_HOSTCAP_H2D_IFRM			0x8000
++#define BRCMF_HOSTCAP_H2D_DAR			0x10000
++#define BRCMF_HOSTCAP_EXTENDED_TRAP_DATA	0x20000
++#define BRCMF_HOSTCAP_TXSTATUS_METADATA		0x40000
++#define BRCMF_HOSTCAP_BT_LOGGING		0x80000
++#define BRCMF_HOSTCAP_SNAPSHOT_UPLOAD		0x100000
++#define BRCMF_HOSTCAP_FAST_DELETE_RING		0x200000
++#define BRCMF_HOSTCAP_PKT_TXSTATUS		0x400000
++#define BRCMF_HOSTCAP_UR_FW_NO_TRAP		0x800000
++#define BRCMF_HOSTCAP_HSCB			0x2000000
++#define BRCMF_HOSTCAP_EXT_TRAP_DBGBUF		0x4000000
++#define BRCMF_HOSTCAP_EDL_RING			0x10000000
++#define BRCMF_HOSTCAP_PKT_TIMESTAMP		0x20000000
++#define BRCMF_HOSTCAP_PKT_HP2P			0x40000000
++#define BRCMF_HOSTCAP_HWA			0x80000000
++#define BRCMF_HOSTCAP2_DURATION_SCALE_MASK	0x3F
++
++#define BRCMF_SHARED_FLAGS_OFFSET		0
+ #define BRCMF_SHARED_MAX_RXBUFPOST_OFFSET	34
+ #define BRCMF_SHARED_RING_BASE_OFFSET		52
+ #define BRCMF_SHARED_RX_DATAOFFSET_OFFSET	36
+@@ -225,6 +278,11 @@ static const struct brcmf_firmware_mapping brcmf_pcie_fwnames[] = {
+ #define BRCMF_SHARED_DMA_SCRATCH_ADDR_OFFSET	56
+ #define BRCMF_SHARED_DMA_RINGUPD_LEN_OFFSET	64
+ #define BRCMF_SHARED_DMA_RINGUPD_ADDR_OFFSET	68
++#define BRCMF_SHARED_FLAGS2_OFFSET		80
++#define BRCMF_SHARED_HOST_CAP_OFFSET		84
++#define BRCMF_SHARED_FLAGS3_OFFSET		108
++#define BRCMF_SHARED_HOST_CAP2_OFFSET		112
++#define BRCMF_SHARED_HOST_CAP3_OFFSET		116
+ 
+ #define BRCMF_RING_H2D_RING_COUNT_OFFSET	0
+ #define BRCMF_RING_D2H_RING_COUNT_OFFSET	1
+
+From d65e16faef2e15889ba1c67075fff294249aeba8 Mon Sep 17 00:00:00 2001
+From: Hector Martin <marcan@marcan.st>
+Date: Tue, 18 Oct 2022 22:02:10 +0900
+Subject: [PATCH 20/26] wifi: brcmfmac: Handle PCIe MSI properly
+
+On newer firmwares under at least certain conditions, MSI mode does not
+leave interrupt flags set (they are cleared by the firmware). Handle
+this by always checking for ring data when we get an MSI, regardless of
+whether any IRQ flags were set.
+
+Signed-off-by: Hector Martin <marcan@marcan.st>
+---
+ .../broadcom/brcm80211/brcmfmac/pcie.c        | 23 +++++++++++++------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+index ec58f0a83dbe42..2d0071df2b2bfc 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+@@ -400,6 +400,7 @@ struct brcmf_pciedev_info {
+ 	wait_queue_head_t mbdata_resp_wait;
+ 	bool mbdata_completed;
+ 	bool irq_allocated;
++	bool have_msi;
+ 	bool wowl_enabled;
+ 	u8 dma_idx_sz;
+ 	void *idxbuf;
+@@ -976,6 +977,11 @@ static irqreturn_t brcmf_pcie_quick_check_isr(int irq, void *arg)
+ 		brcmf_dbg(PCIE, "Enter\n");
+ 		return IRQ_WAKE_THREAD;
+ 	}
++
++	/* mailboxint is cleared by the firmware in MSI mode */
++	if (devinfo->have_msi)
++		return IRQ_WAKE_THREAD;
++
+ 	return IRQ_NONE;
+ }
+ 
+@@ -992,13 +998,13 @@ static irqreturn_t brcmf_pcie_isr_thread(int irq, void *arg)
+ 		brcmf_pcie_write_reg32(devinfo, devinfo->reginfo->mailboxint,
+ 				       status);
+ 		if (status & devinfo->reginfo->int_fn0)
+-			brcmf_pcie_handle_mb_data(devinfo);
+-		if (status & devinfo->reginfo->int_d2h_db) {
+-			if (devinfo->state == BRCMFMAC_PCIE_STATE_UP)
+-				brcmf_proto_msgbuf_rx_trigger(
+-							&devinfo->pdev->dev);
+-		}
++			brcmf_pcie_poll_mb_data(devinfo);
+ 	}
++	if (devinfo->have_msi || status & devinfo->reginfo->int_d2h_db) {
++		if (devinfo->state == BRCMFMAC_PCIE_STATE_UP)
++			brcmf_proto_msgbuf_rx_trigger(&devinfo->pdev->dev);
++	}
++
+ 	brcmf_pcie_bus_console_read(devinfo, false);
+ 	if (devinfo->state == BRCMFMAC_PCIE_STATE_UP)
+ 		brcmf_pcie_intr_enable(devinfo);
+@@ -1016,7 +1022,10 @@ static int brcmf_pcie_request_irq(struct brcmf_pciedev_info *devinfo)
+ 
+ 	brcmf_dbg(PCIE, "Enter\n");
+ 
+-	pci_enable_msi(pdev);
++	devinfo->have_msi = pci_enable_msi(pdev) >= 0;
++	if (devinfo->have_msi)
++		brcmf_dbg(PCIE, "MSI enabled\n");
++
+ 	if (request_threaded_irq(pdev->irq, brcmf_pcie_quick_check_isr,
+ 				 brcmf_pcie_isr_thread, IRQF_SHARED,
+ 				 "brcmf_pcie_intr", devinfo)) {
