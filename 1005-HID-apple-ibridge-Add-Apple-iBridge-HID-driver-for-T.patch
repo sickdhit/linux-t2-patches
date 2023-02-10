@@ -1,11 +1,5 @@
-From 5252f7f553c118af1818d1a57a6cfd2c5b26b4dd Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Ronald=20Tschal=C3=A4r?= <ronald@innovation.ch>
-Date: Sat, 27 Feb 2021 17:26:42 -0800
-Subject: [PATCH 1/3] HID: apple-ibridge: Add Apple iBridge HID driver for T1
- chip.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+From: Ronald Tschalär <ronald@innovation.ch>
+Subject: [PATCH v2 1/3] HID: apple-ibridge: Add Apple iBridge HID driver for T1 chip
 
 The iBridge device provides access to several devices, including:
 - the Touch Bar
@@ -33,19 +27,24 @@ Signed-off-by: Ronald Tschalär <ronald@innovation.ch>
 [Kerem Karabay: fix appleib_forward_int_op]
 [Kerem Karabay: rely on HID core's parsing in appleib_add_device]
 Signed-off-by: Kerem Karabay <kekrby@gmail.com>
+[Aditya Garg: add a pr_fmt definition]
+[Aditya Garg: constantify certain structures]
+[Aditya Garg: use hid_is_usb() first before using hid_to_usb_dev()]
+[Aditya Garg: remove trailing comma after end-of-array marker]
+Signed-off-by: Aditya Garg <gargaditya08@live.com>
 ---
  drivers/hid/Kconfig         |  15 +
  drivers/hid/Makefile        |   1 +
- drivers/hid/apple-ibridge.c | 610 ++++++++++++++++++++++++++++++++++++
+ drivers/hid/apple-ibridge.c | 615 ++++++++++++++++++++++++++++++++++++
  drivers/hid/apple-ibridge.h |  15 +
  drivers/hid/hid-ids.h       |   1 +
  drivers/hid/hid-quirks.c    |   3 +
- 6 files changed, 645 insertions(+)
+ 6 files changed, 650 insertions(+)
  create mode 100644 drivers/hid/apple-ibridge.c
  create mode 100644 drivers/hid/apple-ibridge.h
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 185a077d59cd..460c9b160cb9 100644
+index e2a5d30c8..e69afa5f4 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
 @@ -130,6 +130,21 @@ config HID_APPLE
@@ -71,7 +70,7 @@ index 185a077d59cd..460c9b160cb9 100644
  	tristate "Apple infrared receiver"
  	depends on (USB_HID)
 diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index e8014c1a2f8b..b61373cd82e8 100644
+index e8014c1a2..b61373cd8 100644
 --- a/drivers/hid/Makefile
 +++ b/drivers/hid/Makefile
 @@ -26,6 +26,7 @@ obj-$(CONFIG_HID_ACCUTOUCH)	+= hid-accutouch.o
@@ -84,10 +83,10 @@ index e8014c1a2f8b..b61373cd82e8 100644
  obj-$(CONFIG_HID_ASUS)		+= hid-asus.o
 diff --git a/drivers/hid/apple-ibridge.c b/drivers/hid/apple-ibridge.c
 new file mode 100644
-index 000000000000..4d26f8d66d3f
+index 000000000..df8623c59
 --- /dev/null
 +++ b/drivers/hid/apple-ibridge.c
-@@ -0,0 +1,610 @@
+@@ -0,0 +1,615 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Apple iBridge Driver
@@ -130,6 +129,8 @@ index 000000000000..4d26f8d66d3f
 + * iBridge when suspending and resuming.
 + */
 +
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
 +#include <linux/platform_device.h>
 +#include <linux/acpi.h>
 +#include <linux/device.h>
@@ -145,7 +146,7 @@ index 000000000000..4d26f8d66d3f
 +
 +#define APPLEIB_BASIC_CONFIG	1
 +
-+static struct hid_device_id appleib_sub_hid_ids[] = {
++static const struct hid_device_id appleib_sub_hid_ids[] = {
 +	{ HID_USB_DEVICE(USB_VENDOR_ID_LINUX_FOUNDATION,
 +			 USB_DEVICE_ID_IBRIDGE_TB) },
 +	{ HID_USB_DEVICE(USB_VENDOR_ID_LINUX_FOUNDATION,
@@ -405,7 +406,7 @@ index 000000000000..4d26f8d66d3f
 +	return hid_hw_output_report(hdev_info->hdev, buf, len);
 +}
 +
-+static struct hid_ll_driver appleib_ll_driver = {
++static const struct hid_ll_driver appleib_ll_driver = {
 +	.start = appleib_ll_start,
 +	.stop = appleib_ll_stop,
 +	.open = appleib_ll_open,
@@ -521,7 +522,10 @@ index 000000000000..4d26f8d66d3f
 +	int rc;
 +
 +	/* check and set usb config first */
-+	udev = hid_to_usb_dev(hdev);
++	if (hid_is_usb(hdev))
++		udev = hid_to_usb_dev(hdev);
++	else
++		return -EINVAL;
 +
 +	if (udev->actconfig->desc.bConfigurationValue != APPLEIB_BASIC_CONFIG) {
 +		rc = usb_driver_set_configuration(udev, APPLEIB_BASIC_CONFIG);
@@ -573,7 +577,7 @@ index 000000000000..4d26f8d66d3f
 +
 +static const struct hid_device_id appleib_hid_ids[] = {
 +	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IBRIDGE) },
-+	{ },
++	{ }
 +};
 +
 +static struct hid_driver appleib_hid_driver = {
@@ -677,7 +681,7 @@ index 000000000000..4d26f8d66d3f
 +
 +static const struct acpi_device_id appleib_acpi_match[] = {
 +	{ "APP7777", 0 },
-+	{ },
++	{ }
 +};
 +
 +MODULE_DEVICE_TABLE(acpi, appleib_acpi_match);
@@ -700,7 +704,7 @@ index 000000000000..4d26f8d66d3f
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/hid/apple-ibridge.h b/drivers/hid/apple-ibridge.h
 new file mode 100644
-index 000000000000..8aefcf61589a
+index 000000000..8aefcf615
 --- /dev/null
 +++ b/drivers/hid/apple-ibridge.h
 @@ -0,0 +1,15 @@
@@ -720,7 +724,7 @@ index 000000000000..8aefcf61589a
 +
 +#endif
 diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 8f58c3c1bec3..87315317608e 100644
+index 9e36b4cd9..a9f100e67 100644
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
 @@ -187,6 +187,7 @@
@@ -732,10 +736,10 @@ index 8f58c3c1bec3..87315317608e 100644
  #define USB_VENDOR_ID_ASUS		0x0486
  #define USB_DEVICE_ID_ASUS_T91MT	0x0185
 diff --git a/drivers/hid/hid-quirks.c b/drivers/hid/hid-quirks.c
-index 0e9702c7f7d6..695d4a0e964b 100644
+index 5bc91f68b..e9b591fda 100644
 --- a/drivers/hid/hid-quirks.c
 +++ b/drivers/hid/hid-quirks.c
-@@ -320,6 +320,9 @@ static const struct hid_device_id hid_have_special_driver[] = {
+@@ -319,6 +319,9 @@ static const struct hid_device_id hid_have_special_driver[] = {
  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_TOUCHBAR_BACKLIGHT) },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_TOUCHBAR_DISPLAY) },
  #endif
@@ -746,5 +750,5 @@ index 0e9702c7f7d6..695d4a0e964b 100644
  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL) },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL2) },
 -- 
-2.38.1
+2.37.2
 

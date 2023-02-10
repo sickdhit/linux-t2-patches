@@ -1,8 +1,5 @@
-From 8602df7360b91ab1505e23f82ba50709e4908ef2 Mon Sep 17 00:00:00 2001
 From: Orlando Chamberlain <orlandoch.dev@gmail.com>
-Date: Mon, 14 Nov 2022 17:29:52 +0300
-Subject: [PATCH 3/3] HID: apple-magic-backlight: Add driver for keyboard
- backlight on internal Magic Keyboards
+Subject: [PATCH v2 3/3] HID: apple-magic-backlight: Add driver for keyboard backlight on internal Magic Keyboards
 
 This driver adds support for the keyboard backlight on Intel T2 Macs
 with internal Magic Keyboards (MacBookPro16,x and MacBookAir9,1)
@@ -10,6 +7,7 @@ with internal Magic Keyboards (MacBookPro16,x and MacBookAir9,1)
 Signed-off-by: Orlando Chamberlain <orlandoch.dev@gmail.com>
 Co-developed-by: Kerem Karabay <kekrby@gmail.com>
 Signed-off-by: Kerem Karabay <kekrby@gmail.com>
+Signed-off-by: Aditya Garg <gargaditya08@live.com>
 ---
  MAINTAINERS                         |   6 ++
  drivers/hid/Kconfig                 |  13 +++
@@ -19,10 +17,10 @@ Signed-off-by: Kerem Karabay <kekrby@gmail.com>
  create mode 100644 drivers/hid/apple-magic-backlight.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 886d3f69ee64..3d6496c81d92 100644
+index fb1471cb5..3319f0c3e 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -9087,6 +9087,12 @@ F:	include/linux/pm.h
+@@ -9201,6 +9201,12 @@ F:	include/linux/pm.h
  F:	include/linux/suspend.h
  F:	kernel/power/
  
@@ -36,7 +34,7 @@ index 886d3f69ee64..3d6496c81d92 100644
  M:	Jiri Kosina <jikos@kernel.org>
  M:	Benjamin Tissoires <benjamin.tissoires@redhat.com>
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 5bcdda7ea809..fb055800ab95 100644
+index 4ec669267..ad4612ec5 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
 @@ -156,6 +156,19 @@ config HID_APPLE_TOUCHBAR
@@ -60,7 +58,7 @@ index 5bcdda7ea809..fb055800ab95 100644
  	tristate "Apple infrared receiver"
  	depends on (USB_HID)
 diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index c792e42fe43f..a961914ec399 100644
+index c792e42fe..a961914ec 100644
 --- a/drivers/hid/Makefile
 +++ b/drivers/hid/Makefile
 @@ -28,6 +28,7 @@ obj-$(CONFIG_HID_ACRUX)		+= hid-axff.o
@@ -73,7 +71,7 @@ index c792e42fe43f..a961914ec399 100644
  obj-$(CONFIG_HID_ASUS)		+= hid-asus.o
 diff --git a/drivers/hid/apple-magic-backlight.c b/drivers/hid/apple-magic-backlight.c
 new file mode 100644
-index 000000000000..9b128f6df18e
+index 000000000..864e9b199
 --- /dev/null
 +++ b/drivers/hid/apple-magic-backlight.c
 @@ -0,0 +1,143 @@
@@ -221,5 +219,5 @@ index 000000000000..9b128f6df18e
 +MODULE_AUTHOR("Orlando Chamberlain <orlandoch.dev@gmail.com>");
 +MODULE_LICENSE("GPL");
 -- 
-2.38.1
+2.37.2
 
