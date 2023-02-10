@@ -155,7 +155,7 @@ index 000000000..df8623c59
 +
 +static struct {
 +	unsigned int usage;
-+	struct hid_device_id *dev_id;
++	const struct hid_device_id *dev_id;
 +} appleib_usage_map[] = {
 +	/* Default iBridge configuration, key inputs and mode settings */
 +	{ 0x00010006, &appleib_sub_hid_ids[0] },
@@ -433,7 +433,7 @@ index 000000000..df8623c59
 +
 +static struct hid_device *
 +appleib_add_sub_dev(struct appleib_hid_dev_info *hdev_info,
-+		    struct hid_device_id *dev_id)
++		    const struct hid_device_id *dev_id)
 +{
 +	struct hid_device *sub_hdev;
 +	int rc;
@@ -470,7 +470,7 @@ index 000000000..df8623c59
 +static struct appleib_hid_dev_info *appleib_add_device(struct hid_device *hdev)
 +{
 +	struct appleib_hid_dev_info *hdev_info;
-+	struct hid_device_id *dev_id;
++	const struct hid_device_id *dev_id;
 +	unsigned int usage;
 +	int i;
 +
