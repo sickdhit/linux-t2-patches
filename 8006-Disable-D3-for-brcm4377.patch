@@ -1,6 +1,6 @@
-From ffa23a647a87cfcc167d9c9d535dcabbf8e8dfad Mon Sep 17 00:00:00 2001
+From 41840fede4ae6ff094191286d04a98b531d809a4 Mon Sep 17 00:00:00 2001
 From: Aditya Garg <gargaditya08@live.com>
-Date: Fri, 24 Feb 2023 22:47:40 +0530
+Date: Fri, 24 Feb 2023 23:07:12 +0530
 Subject: [PATCH] Disable D3 for brcm4377
 
 ---
@@ -8,10 +8,10 @@ Subject: [PATCH] Disable D3 for brcm4377
  1 file changed, 10 insertions(+)
 
 diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
-index 0fcdd84bb..10ee5c225 100644
+index 1cd899276..58bc9d58a 100644
 --- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
 +++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
-@@ -2567,6 +2567,11 @@ static int brcmf_pcie_pm_enter_D3(struct device *dev)
+@@ -2434,6 +2434,11 @@ static int brcmf_pcie_pm_enter_D3(struct device *dev)
  	bus = dev_get_drvdata(dev);
  	devinfo = bus->bus_priv.pcie->devinfo;
  
@@ -20,10 +20,10 @@ index 0fcdd84bb..10ee5c225 100644
 +		return 0;
 +	}
 +
- 	brcmf_pcie_fwcon_timer(devinfo, false);
  	brcmf_bus_change_state(bus, BRCMF_BUS_DOWN);
  
-@@ -2600,6 +2605,11 @@ static int brcmf_pcie_pm_leave_D3(struct device *dev)
+ 	devinfo->mbdata_completed = false;
+@@ -2466,6 +2471,11 @@ static int brcmf_pcie_pm_leave_D3(struct device *dev)
  	devinfo = bus->bus_priv.pcie->devinfo;
  	brcmf_dbg(PCIE, "Enter, dev=%p, bus=%p\n", dev, bus);
  
