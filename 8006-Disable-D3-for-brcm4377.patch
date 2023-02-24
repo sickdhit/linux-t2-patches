@@ -1,0 +1,40 @@
+From ffa23a647a87cfcc167d9c9d535dcabbf8e8dfad Mon Sep 17 00:00:00 2001
+From: Aditya Garg <gargaditya08@live.com>
+Date: Fri, 24 Feb 2023 22:47:40 +0530
+Subject: [PATCH] Disable D3 for brcm4377
+
+---
+ .../net/wireless/broadcom/brcm80211/brcmfmac/pcie.c    | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+index 0fcdd84bb..10ee5c225 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
+@@ -2567,6 +2567,11 @@ static int brcmf_pcie_pm_enter_D3(struct device *dev)
+ 	bus = dev_get_drvdata(dev);
+ 	devinfo = bus->bus_priv.pcie->devinfo;
+ 
++	if(devinfo->ci->chip == BRCM_CC_4377_CHIP_ID) {
++		brcmf_dbg(PCIE, "Skip enter D3 for 4377, remember to rfkill block before this\n");
++		return 0;
++	}
++
+ 	brcmf_pcie_fwcon_timer(devinfo, false);
+ 	brcmf_bus_change_state(bus, BRCMF_BUS_DOWN);
+ 
+@@ -2600,6 +2605,11 @@ static int brcmf_pcie_pm_leave_D3(struct device *dev)
+ 	devinfo = bus->bus_priv.pcie->devinfo;
+ 	brcmf_dbg(PCIE, "Enter, dev=%p, bus=%p\n", dev, bus);
+ 
++	if(devinfo->ci->chip == BRCM_CC_4377_CHIP_ID) {
++		brcmf_dbg(PCIE, "Skip leave D3 for 4377, remember to rfkill unblock after this\n");
++		return 0;
++	}
++
+ 	/* Check if device is still up and running, if so we are ready */
+ 	if (brcmf_pcie_read_reg32(devinfo, devinfo->reginfo->intmask) != 0) {
+ 		brcmf_dbg(PCIE, "Try to wakeup device....\n");
+-- 
+2.37.2
+
